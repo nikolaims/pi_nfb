@@ -10,7 +10,7 @@ import numpy as np
 n = 10000
 n_components = 50
 fs = 250
-band = (8, 12)
+band = (9, 11)
 time   = np.arange(n) / fs
 
 # load signal
@@ -21,7 +21,7 @@ w = 2
 gain = [0, 0, 1, 1, 0, 0]
 freq = [0 , band[0]-w, band[0], band[1], band[1]+w, fs/2]
 
-f_n = 400
+f_n = 800
 taps = firwin2(f_n, freq, gain, nyq=fs/2)
 fir_signal = lfilter(taps, 1, signal)[f_n//2:]
 plt.plot(fir_signal)

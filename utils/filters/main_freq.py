@@ -1,8 +1,6 @@
 import numpy as np
 import pylab as plt
-from scipy.signal import *
-from utils.data.loaders import get_signal
-
+from scipy.signal import periodogram
 
 def get_main_freq(x, fs, band, show=False):
     f, Pxx = periodogram(x, fs=fs, nfft=fs*10)
@@ -16,6 +14,9 @@ def get_main_freq(x, fs, band, show=False):
         plt.show()
     return f_alpha
 
+
+
 if __name__ == '__main__':
+    from utils.data.loaders import get_signal
     signal = get_signal()[:, 15]
-    get_main_freq(x=signal, fs=250, band=(8,12))
+    get_main_freq(x=signal, fs=250, band=(8,12), show=True)
