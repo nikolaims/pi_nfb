@@ -14,6 +14,7 @@ def load_feedback(ica_artifact=False, csp_alpha=False, signal_name='left'):
         raw = f[protocol+'/raw_data'][:]
         print('Data was loaded from {} "{}"'.format(protocol, f[protocol].attrs['name']))
         signals_names = list(f[protocol+'/signals_stats'].keys())
+        print(signals_names)
         derived = f[protocol+'/signals_data'][:][:, signals_names.index(signal_name)]
         _rejections_group = f[protocol+'/signals_stats/{}/rejections'.format(signal_name)]
         rejections = [_rejections_group['rejection{}'.format(k + 1)][:] for k in range(len(_rejections_group)//2)]
@@ -25,6 +26,7 @@ def load_feedback(ica_artifact=False, csp_alpha=False, signal_name='left'):
     if csp_alpha:
         data = np.dot(data, rejections[1])
     signal = np.dot(data, left_spatial_filter)
+    print(left_spatial_filter)
     return data, signal, derived
 
 def get_ideal_signal(band = (8, 12), causal=False, causal_iir=True, b_order=4, min_phase=False):
@@ -50,3 +52,9 @@ def get_signal():
     data, signal, derived = load_feedback(ica_artifact=True)
     data = dc_blocker(data)
     return data
+
+def get_signal_data():
+    data, signal, derived = load_feedback(ica_artifact=True, csp_alpha=True)
+    data = dc_blocker(data)
+    signal = dc_blocker(signal)
+    return data, signal, derived

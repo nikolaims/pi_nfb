@@ -2,9 +2,14 @@ from scipy.signal import firwin2
 
 
 
-def get_fir_filter(fs, main_freq=10, order=2000, width=1, show=False):
+def get_fir_filter(fs, main_freq=10, order=2000, width=1, show=False, band=None):
     # design ideal filter
-    band = (main_freq - width, main_freq + width)
+    if band is None:
+        band = (main_freq - width, main_freq + width)
+    else:
+        print('Warning!! band was defined! Main_freq and width will be ignored!! ')
+
+    print(band)
     w = 0.1
     freq = [0, band[0]-w, band[0], band[1], band[1]+w, fs/2]
     gain = [0, 0, 1, 1, 0, 0]
