@@ -3,8 +3,7 @@ from scipy.signal import lfilter
 from sklearn.linear_model import LassoCV, ElasticNetCV, RidgeCV
 
 import pylab as plt
-#import seaborn as sns
-import pandas as pd
+#
 
 from utils.filters.ideal_filter import get_fir_filter
 
@@ -19,6 +18,8 @@ def elastic_net_base(x, fs, n_components, band):
     ax1.plot(model.predict(base))
     c = np.abs(model.coef_) > 0.00000000001
     # c = model.coef_
+    import seaborn as sns
+    import pandas as pd
     df = pd.DataFrame({'type': ['sin', 'cos']*n_components, 'freq': [freqs[k//2] for k in range(2*n_components)], 'val': c, }).pivot("type", 'freq', 'val')
     sns.heatmap(df, cbar=0, ax=ax2, square=1, xticklabels=['' if k%((n_components-1)//5) else '{:.2f}'.format(freqs[k]) for k in range(n_components)])
     plt.xticks(rotation=90)
@@ -49,12 +50,15 @@ def get_base(size, fs, n_components=10, low=7, high=14, nonlinear=1.1, show_freq
     return base, freqs
 
 
-def get_base_ort(N, fs, low, high, n_components=None):
+def get_base_ort(N, fs, low, high, n_components=None, truncate=False):
     if n_components is not None:
         N = int(fs * n_components / (high - low))
         print(N)
     t = np.arange(N) / fs
-    freqs = [k / N * fs for k in range(N) if low <= k / N * fs < high]
+
+    freqs = [k / N * fs for k in range(N)]
+    if truncate:
+        freqs = [f for f in freqs if low <= f < high]
     base = []
     for model_freq in freqs:
         base += [np.sin(model_freq * t * 2 * np.pi), np.cos(model_freq * t * 2 * np.pi)]

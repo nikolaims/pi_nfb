@@ -7,9 +7,10 @@ from utils.data.loaders import get_signal_data
 from utils.envelope import find_lag
 from utils.filters.ideal_filter import get_fir_filter
 from utils.filters.main_freq import get_main_freq
+from utils.filters import dc_blocker
 
 # parameters
-fs = 500
+fs = 250
 ch = 4
 i_fir_order = 2000 # ideal FIR order
 fir_order = 400
@@ -18,17 +19,21 @@ fir2_width = 6
 
 # load signal
 raw, signals, derived = get_signal_data()
-raw = signals[:30000]
+raw = signals[5000:25000]
 
 
 
 
 # test data
-data_dir = 'C:\\Users\\Nikolai\PycharmProjects\\nfb\pynfb\\results\\test_experiment_02-16_14-26-11\\'
+data_dir = 'C:\\Users\\Nikolai\\Downloads\\pilot_5Days_Rakhmankulov_Day1_02-27_17-27-34\\'
 with h5py.File(data_dir + 'experiment_data.h5', 'r') as f:  # TODO: path
-    protocol = 'protocol1'
-#    raw = f[protocol+'/raw_data'][:][:, 0]
-#    derived = f[protocol+'/signals_data'][:][:, 0]
+    protocol = 'protocol6'
+    raw = f[protocol+'/raw_data'][:][:, 0]
+    derived = f[protocol+'/signals_data'][:][:, 0]
+#raw = dc_blocker(raw)
+
+plt.plot(raw)
+plt.show()
 
 
 

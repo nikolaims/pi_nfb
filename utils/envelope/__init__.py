@@ -12,6 +12,16 @@ class RCEnvelopeDetector:
         self.y = x if x > self.y else self.y * self.factor + x * (1 - self.factor)
         return self.y
 
+class RCEnvelopeDetector:
+    def __init__(self, factor):
+        self.factor = factor
+        self.y = 0
+
+    def get_envelope(self, x):
+        x = abs(x)
+        self.y = x if x > self.y else self.y * self.factor + x * (1 - self.factor)
+        return self.y
+
 
 if __name__ == '__main__':
     from utils.data.loaders import load_feedback
