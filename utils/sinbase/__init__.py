@@ -49,6 +49,14 @@ def get_base(size, fs, n_components=10, low=7, high=14, nonlinear=1.1, show_freq
     base = np.vstack(base).T
     return base, freqs
 
+def get_base_by_freqs(size, fs, freqs):
+    t = np.arange(size) / fs
+    base = []
+    for model_freq in freqs:
+        base += [np.sin(model_freq * t * 2 * np.pi), np.cos(model_freq * t * 2 * np.pi)]
+    base = np.vstack(base).T
+    return base
+
 
 def get_base_ort(N, fs, low, high, n_components=None, truncate=False):
     if n_components is not None:
