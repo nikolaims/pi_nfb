@@ -4,11 +4,13 @@ import pylab as plt
 
 # generate data:
 np.random.seed(42)
-n_steps = 200
+n_steps = 500
 n_components = 50
+n_act = 5
 t = np.arange(n_steps)
 X = np.random.normal(size=(n_steps, n_components))
-w_opt = np.random.normal(size=(n_components, )) * np.random.randint(0, 2, size=(n_components, ))
+w_opt = np.random.normal(size=(n_components, ))
+w_opt[np.random.choice(n_components, n_components - n_act, replace=0)] = 0
 d = np.dot(X, w_opt)
 #plt.plot(d)
 #plt.show()
@@ -34,7 +36,7 @@ def lcem(B, u, w, Ip, Im, K, tau):
     return w, Ip, Im
 
 # main algorithm:
-def sparls(X, d, sigma=1, alpha=0.01, lambda_=0.999999, K=2, gamma=0):
+def sparls(X, d, sigma=1, alpha=0.01, lambda_=0.999, K=50, gamma=30):
     n_components = X.shape[1]
     kappa = (alpha/sigma)**2
     I = np.eye(n_components)
@@ -57,21 +59,18 @@ def sparls(X, d, sigma=1, alpha=0.01, lambda_=0.999999, K=2, gamma=0):
 p, w, w_path = sparls(X, d)
 
 
-f, [ax1, ax2, ax3] = plt.subplots(3)
+f, [ax1, ax2] = plt.subplots(2)
 ax1.plot(p)
 ax1.plot(d)
 ax1.set_title('Time series')
 ax1.set_xlabel('n')
 
-ax2.plot(w_path)
+ax2.plot(w_path, 'b', alpha=1)
+ax2.plot(w_path*0 + w_opt, 'g', alpha=1)
 ax2.set_title('Weights path')
 ax2.set_ylabel('w')
 ax2.set_xlabel('n')
 
-ax3.plot(w)
-ax3.plot(w_opt)
-ax3.set_title('Weights in the end')
-ax3.set_ylabel('w')
-ax3.set_xlabel('j')
+
 plt.tight_layout()
 plt.show()
