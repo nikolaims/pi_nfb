@@ -65,7 +65,7 @@ for experiment in experiments[:]:
     print('\n\nEXPERIMENT', experiment)
 
 
-    with h5py.File('{}\\{}\\{}'.format(pilot_dir, experiment, 'experiment_data.h5')) as f:
+    with h5py.File('{}\\{}\\{}'.format(pilot_dir, experiment, 'experiment_data1.h5')) as f:
         rejections = [f['protocol1/signals_stats/left/rejections/rejection{}'.format(j + 1)][:]
                       for j in range(2)]
 
@@ -75,7 +75,7 @@ for experiment in experiments[:]:
 
 
     # load data
-    with h5py.File('{}\\{}\\{}'.format(pilot_dir, experiment, 'experiment_data.h5')) as f:
+    with h5py.File('{}\\{}\\{}'.format(pilot_dir, experiment, 'experiment_data1.h5')) as f:
         labels, fs = get_lsl_info_from_xml(f['stream_info.xml'][0])
         print('fs: {}\nall labels {}: {}'.format(fs, len(labels), labels))
         channels = [label for label in labels if label not in ['A1', 'A2', 'AUX']]

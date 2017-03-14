@@ -31,3 +31,20 @@ def sin_base_rls_filter(x, fs, main_freq, n_components=16, ort=False):
         ws[k] = w
         rls_envelope[k] = (np.sum(projections[:, k] * w[c_ind[0]] * w[c_ind[1]])) ** 0.5
     return rls_signal, rls_envelope
+
+def evelope_from_sinbase(base, freqs, fs, w):
+    # prepare sin
+    n_steps, n_components = base.shape
+    n = n_steps
+    projections = []
+    pairs = lambda: combinations(range(n_components), 2)
+    for i, j in pairs():
+        freq = (1 - 2 * (i % 2)) * np.pi / 2 * ((i - j) % 2) + (freqs[j // 2] - freqs[i // 2]) * 2 * np.pi * (np.arange(
+            n) % n_steps) / fs
+        projections.append(2 * np.cos(freq))
+    projections = np.array(projections + [np.ones((n,)) for k in range(n_components)])
+    c_ind = np.array(list(pairs()) + [(k, k) for k in range(n_components)]).T
+    rls_envelope = np.zeros(shape=(n_steps, ))
+    for k in range(n):
+        rls_envelope[k] = (np.sum(projections[:, k] * w[k, c_ind[0]] * w[k, c_ind[1]])) ** 0.5
+    return rls_envelope

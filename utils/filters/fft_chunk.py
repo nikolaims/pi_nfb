@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.fftpack import fftfreq, rfft
 
-def fft_chunk_envelope(raw, band, fs):
+def fft_chunk_envelope(raw, band, fs, smoothing_factor=0.3, chunk_size=8):
     # fft chunk filter window
     # asymmetric gaussian window
     n_samples = 500
@@ -18,8 +18,7 @@ def fft_chunk_envelope(raw, band, fs):
 
     # filter
     filtered = np.zeros_like(raw)
-    chunk_size = 8
-    smoothing_factor = 0.3
+
     previous_sample = 0
     for k in range(n_samples, len(filtered), chunk_size):
         buffer = raw[k-n_samples:k]

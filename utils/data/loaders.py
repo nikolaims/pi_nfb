@@ -9,7 +9,7 @@ from utils.filters import dc_blocker, magic_filter_taps
 data_dir = dirname(dirname(dirname(realpath(__file__)))) + '/data/'
 
 def load_feedback(ica_artifact=False, csp_alpha=False, signal_name='left'):
-    with h5py.File(data_dir + 'experiment_data.h5', 'r') as f: #TODO: path
+    with h5py.File(data_dir + 'experiment_data1.h5', 'r') as f: #TODO: path
         protocol = 'protocol10'
         raw = f[protocol+'/raw_data'][:]
         print('Data was loaded from {} "{}"'.format(protocol, f[protocol].attrs['name']))
@@ -19,6 +19,9 @@ def load_feedback(ica_artifact=False, csp_alpha=False, signal_name='left'):
         _rejections_group = f[protocol+'/signals_stats/{}/rejections'.format(signal_name)]
         rejections = [_rejections_group['rejection{}'.format(k + 1)][:] for k in range(len(_rejections_group)//2)]
         left_spatial_filter = f[protocol+'/signals_stats/{}/spatial_filter'.format(signal_name)][:]
+        mean = f[protocol + '/signals_stats/{}/mean'.format(signal_name)].value
+        std = f[protocol + '/signals_stats/{}/std'.format(signal_name)].value
+
 
     data = raw
     if ica_artifact:
@@ -27,7 +30,7 @@ def load_feedback(ica_artifact=False, csp_alpha=False, signal_name='left'):
         data = np.dot(data, rejections[1])
     signal = np.dot(data, left_spatial_filter)
     print(left_spatial_filter)
-    return data, signal, derived
+    return data, signal, derived*std + mean
 
 def get_ideal_signal(band = (8, 12), causal=False, causal_iir=True, b_order=4, min_phase=False):
     data, signal, derived = load_feedback(ica_artifact=True)

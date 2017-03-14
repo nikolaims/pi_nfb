@@ -6,6 +6,7 @@ from mne1.filter import create_filter
 from utils.data.loaders import get_signal
 from utils.envelope import find_lag
 from utils.filters import dc_blocker
+from utils.filters.fft_chunk import fft_chunk_envelope
 from utils.filters.ideal_filter import get_fir_filter, get_fir_filter_high_pass
 from utils.filters.main_freq import get_main_freq
 from utils.filters.min_phase import get_filter_delay_at_freq, minimum_phase
@@ -41,25 +42,9 @@ fir_envelope = np.abs(hilbert(fir_signal))
 # min_phase filter
 fir2_taps, fir2_delay = get_fir_filter(fs, main_freq, order=fir2_order, show=0, width=fir2_width)#, band=[main_freq-3, main_freq+100])
 #fir2_taps, fir2_delay = get_fir_filter_high_pass(fs, main_freq=main_freq, order=101, width=1, show=1)
-min_phase_taps = minimum_phase(fir2_taps)
-min_phase_taps = create_filter(raw, 250, None, main_freq,  filter_length=1000, phase='minimum')
 
 
-#min_phase_delay = get_filter_delay_at_freq(min_phase_taps, main_freq, fs) + 10
-#print('Min phase delay: ', min_phase_delay)
-min_phase_signal = lfilter(min_phase_taps, [1.], raw)#[min_phase_delay:]
 
-lag = find_lag(np.abs(hilbert(filtfilt(i_taps, [1.], min_phase_signal))), i_envelope, 250, show=0)
-print('Min phase delay: ', lag)
-min_phase_signal = min_phase_signal[lag:]
-#min_phase_signal = dc_blocker(raw,r=0.9)
-min_phase_envelope = np.abs(hilbert(min_phase_signal))
-from mne1.viz import plot_filter
-plot_filter(min_phase_taps, 250, fscale='linear', flim=(0, 20))
-
-# rls fitting
-
-rls_signal, rls_envelope = sin_base_rls_filter(min_phase_signal, fs, main_freq, n_components=32)
 
 
 #222222222222
@@ -73,7 +58,7 @@ min_phase_signal = lfilter(min_phase_taps, [1.], raw)#[min_phase_delay:]
 
 lag = find_lag(np.abs(hilbert(filtfilt(i_taps, [1.], min_phase_signal))), i_envelope, 250, show=0)
 print('Min phase delay: ', lag)
-min_phase_signal = min_phase_signal[lag:]
+min_phase_signal = min_phase_signal#[lag:]
 #min_phase_signal = dc_blocker(raw,r=0.9)
 min_phase_envelope = np.abs(hilbert(min_phase_signal))
 from mne1.viz import plot_filter
@@ -91,6 +76,23 @@ rls_signal2, rls_envelope2 = sin_base_rls_filter(min_phase_signal, fs, main_freq
 rls_envelope = rls_envelope2#rls_envelope[:25000]*0.4 + rls_envelope2[:25000]*0.6
 rls_signal = rls_signal2
 print('RLS lag', find_lag(rls_envelope[:25000], i_envelope[:25000], 250, 1))
+
+if 1:
+    import seaborn as sns
+
+    sns.set_style("white")
+    sns.despine()
+    fft_envelope = fft_chunk_envelope(raw, band=(main_freq-1, main_freq+1), fs=fs, smoothing_factor=0.1, chunk_size=1)
+    cm = sns.color_palette()
+    plt.plot(i_signal**2, c=cm[0], alpha=0.5)
+    plt.plot(i_envelope**2, c=cm[0], alpha=1, linewidth=2)
+    plt.plot(rls_signal**2, c=cm[1], alpha=0.5)
+    plt.plot(rls_envelope**2, c=cm[1], alpha=1, linewidth=2)
+    plt.plot(fft_envelope**2, c=cm[2], alpha=1, linewidth=2)
+    plt.legend(['$X^2(n)$','$P(n)$','$X_{RLS}^2(n)$','$P_{RLS}(n)$','$P_{FFT}(n)$'])
+    plt.xlabel('$n$, [samples]')
+    plt.ylabel('$magnitude^2$')
+    plt.show()
 
 # plot signals and envelopes
 if 1:
