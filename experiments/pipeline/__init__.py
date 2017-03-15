@@ -5,7 +5,7 @@ from utils.envelope.smoothers import exp_smooth
 from utils.filters.fft_chunk import fft_chunk_envelope
 from utils.filters.main_freq import get_main_freq
 from utils.pipeline.ideal_envelope_detector import ideal_envelope_detector
-from utils.pipeline.naive_rls import naive_rls_envelope_detector
+from utils.pipeline.naive_rls import sparls_ed
 from utils.sinbase import get_base_by_freqs
 from utils.metrics import lag_compensed_nmse, find_lag, smoothness
 nor = lambda x: (x - x.mean()) / x.std()
@@ -29,23 +29,21 @@ raw = raw[:n]
 
 # naive rls
 freqs = [main_freq]
+a, h = np.linspace(main_freq - 1, main_freq, 20, endpoint=False, retstep=True)
+freqs = list(a) + [main_freq] + list(a + 1 + h)
+
 base = get_base_by_freqs(n, fs, freqs)/(len(freqs)*2)
 
-mus = np.linspace(0.003, 0.5, 100)
-try:
-    mses = np.load('mses1.npy')
-    lags = np.load('lags1.npy')
-except Exception:
-    mses = np.zeros_like(mus)
-    lags = np.zeros_like(mus)
-    for k, mu in enumerate(mus):
-        signal, envelope = naive_rls_envelope_detector(raw, band, fs, freqs, mu=mu)
-        lags[k], mses[k] = lag_compensed_nmse(envelope, i_envelope, show=0)
+mus = [1.2]# np.linspace(1, 1.5, 10)
+mses = np.zeros_like(mus)
+lags = np.zeros_like(mus)
+for k, mu in []:#enumerate(mus):
+    print(k)
+    signal, envelope = sparls_ed(raw, band, fs, freqs, alpha=mu, lambda_=0.9, K=1, gamma=0.01, l2=0.001)
+    lags[k], mses[k] = lag_compensed_nmse(envelope, i_envelope, show=0)
 
-    np.save('mses{}.npy'.format(len(freqs)), mses)
-    np.save('lags{}.npy'.format(len(freqs)), lags)
 
-opt_lag = 1
+opt_lag = 20
 plt.plot(mus, lags/opt_lag)
 plt.plot(mus, mses)
 plt.plot(mus, lags/opt_lag + mses)
@@ -55,7 +53,7 @@ plt.legend(['lag/100ms', 'nmse', 'mixed'])
 
 plt.show()
 
-signal, envelope = naive_rls_envelope_detector(raw, band, fs, freqs, mu=opt_mu)
+signal, envelope = sparls_ed(raw, band, fs, freqs, alpha=opt_mu, lambda_=0.9, K=1, gamma=1, l2=0.001)
 envelope = exp_smooth(envelope, factor=0.05)
 find_lag(envelope, i_envelope, fs, 1)
 plt.show()
