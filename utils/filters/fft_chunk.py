@@ -1,10 +1,9 @@
 import numpy as np
 from scipy.fftpack import fftfreq, rfft
 
-def fft_chunk_envelope(raw, band, fs, smoothing_factor=0.3, chunk_size=8):
+def fft_chunk_envelope(raw, band, fs, smoothing_factor=0.3, chunk_size=8, n_samples=500):
     # fft chunk filter window
     # asymmetric gaussian window
-    n_samples = 500
     p = round(2 * n_samples * 2 / 4)  # maximum
     eps = 0.0001  # bounds value
     power = 2  # power of x

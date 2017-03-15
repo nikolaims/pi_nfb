@@ -61,3 +61,8 @@ def get_signal_data():
     data = dc_blocker(data)
     signal = dc_blocker(signal)
     return data, signal, derived
+
+def load_normalised_raw_signal():
+    data, signal, derived = get_signal_data()
+    signal = (signal - signal.mean()) / signal.std()
+    return signal
