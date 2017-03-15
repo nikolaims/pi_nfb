@@ -38,7 +38,7 @@ def find_lag(x, target, fs=None, show=False):
 
 def lag_compensed_nmse(x, ideal, show=False):
     lag = find_lag(x, ideal, show=show)
-    return nmse(x[lag:], ideal[:-lag])
+    return lag, nmse(x[lag:], ideal[:-lag])
 
 if __name__ == '__main__':
     n = 2000
