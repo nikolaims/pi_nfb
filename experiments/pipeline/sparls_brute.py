@@ -35,31 +35,33 @@ freqs = list(a) + [main_freq] + list(a + 1 + h)
 base = get_base_by_freqs(n, fs, freqs)/(len(freqs)*2)
 
 mus = [1.2]# np.linspace(1, 1.5, 10)
-mses = np.zeros_like(mus)
-lags = np.zeros_like(mus)
-for k, mu in []:#enumerate(mus):
-    print(k)
-    signal, envelope = sparls_ed(raw, band, fs, freqs, alpha=mu, lambda_=0.9, K=1, gamma=0.01, l2=0.001)
-    lags[k], mses[k] = lag_compensed_nmse(envelope, i_envelope, show=0)
+
+def f(alpha, lambda_, gamma, l2):
+    try:
+        signal, envelope = sparls_ed(raw, band, fs, freqs, alpha=alpha, lambda_=lambda_, K=1, gamma=gamma, l2=l2)
+    except Exception:
+        return None, None, None
+    lag, mse = lag_compensed_nmse(envelope, i_envelope, show=0)
+    return lag, mse, lag/25 + mse
+
+alpha_range = np.linspace(0.7, 1.3, 5)
+lambda_range = np.linspace(0.7, 0.999,5)
+gamma_range = [0., 0.001, 0.01]
+l2_range = [0., 0.001, 0.01]
 
 
-opt_lag = 20
-plt.plot(mus, lags/opt_lag)
-plt.plot(mus, mses)
-plt.plot(mus, lags/opt_lag + mses)
-opt_mu = mus[np.argmin(lags/opt_lag + mses)]
-print(opt_mu)
-plt.legend(['lag/100ms', 'nmse', 'mixed'])
-
-plt.show()
-#alpha=0.8
-#lambda_ = 0.84975
-#(0.85,  0.8495,    0.0,  0.001)
-alpha, lambda_, gamma, l2 = (0.7,  0.92425,  0.000,  0.001)
-signal, envelope = sparls_ed(raw, band, fs, freqs, alpha=alpha, lambda_=lambda_, K=1, gamma=gamma, l2=l2)
-#envelope = exp_smooth(envelope, factor=0.02)
-find_lag(envelope, i_envelope, fs, 1)
-plt.show()
-
-
-
+import pandas as pd
+ds = pd.DataFrame(columns=['f', 'lag', 'nmse', 'alpha', 'lambda', 'gamma', 'l2'])
+k = 0
+for alpha in alpha_range:
+    for lambda_ in lambda_range:
+        for gamma in gamma_range:
+            for l2 in l2_range:
+                lag, mse, fv = f(alpha, lambda_, gamma, l2)
+                #print('{:.3f}\t{:.3f}\t{:.3f}\t{:.3f}\t{:.3f}\t'.format(alpha, lambda_, lag, mse, fv))
+                ds.loc[k] = [fv,  lag,  mse,  alpha, lambda_, gamma, l2]
+                print(ds.loc[k:k+1])
+                k += 1
+print(ds)
+from time import time
+ds.to_csv('res{}.csv'.format(round(time())))
