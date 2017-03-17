@@ -1,3 +1,5 @@
+from scipy.ndimage import convolve1d
+
 from utils.data.loaders import load_normalised_raw_signal
 import numpy as np
 import pylab as plt
@@ -12,7 +14,7 @@ fs = 250
 raw = load_normalised_raw_signal()
 n = 25000
 # get main freq
-fn = 2
+fn = 1.5
 main_freq = get_main_freq(raw, fs, band=(8, 12))
 band = (main_freq - fn, main_freq + fn)
 
@@ -40,7 +42,7 @@ from utils.filters.fft import fft_filter
 from scipy.signal import firwin2, lfilter, butter
 am = fft_filter(np.real(raw * sine), (0, 2), fs)
 w=0
-order=150
+order=70
 freq = [0, fn, fn+w, fs/2]
 gain = [1, 1, 0, 0]
 taps = firwin2(order, freq, gain, nyq=fs / 2)
@@ -52,8 +54,32 @@ mne_taps = minimum_phase(taps)
 plot_filter(mne_taps, fs)
 #b, a = butter(3, 2/fs*2, )
 b, a = mne_taps, [1.]
-am2 = np.abs(2*lfilter(b, a, raw * sine))
-find_lag(am2, i_envelope, fs, show=True)
+
+filtered = lfilter(b, a, raw * sine)
+am2 = np.abs(2*filtered)
+
+from sg_filter import savitzky_golay
+
+
+
+#am2 = np.abs(2*filtered)
+am3 = savitzky_golay(am2,41*4+1,2)
+
+from scipy.signal import savgol_filter, savgol_coeffs, lfilter
+sc = savgol_coeffs(21, 1)
+
+plot_filter(sc, fs)
+# am3 = savgol_filter(am2, 151, 2, mode="nearest")
+
+am3 = lfilter(sc, [1.], am2)
+#am3 = convolve1d(am2, sc)
+plt.plot(am3)
+plt.plot(am2)
+plt.show()
+
+
+
+find_lag(am3, i_envelope, fs, show=True)
 
 plt.plot(i_envelope)
 plt.plot(np.abs(2*am1))
