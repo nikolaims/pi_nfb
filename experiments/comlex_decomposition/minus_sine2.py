@@ -1,4 +1,4 @@
-from scipy.ndimage import convolve1d
+#from scipy.ndimage import convolve1d
 
 from utils.data.loaders import load_normalised_raw_signal
 import numpy as np
@@ -15,7 +15,7 @@ fs = 250
 raw = load_normalised_raw_signal()
 n = 25000
 # get main freq
-fn = 1
+fn = 1.5
 main_freq = get_main_freq(raw, fs, band=(8, 12))
 band = (main_freq - fn, main_freq + fn)
 
@@ -55,7 +55,7 @@ from mne1.viz import plot_filter
 mne_taps = minimum_phase(taps)
 #mne_taps = create_filter(raw, fs, None, 0.5, phase='minimum', h_trans_bandwidth=1.5, filter_length=100)
 plot_filter(mne_taps, fs)
-b, a = butter(1, 1/fs*2, )
+b, a = butter(1, 1.5/fs*2, )
 #b, a = cheby1(1, 1, 1/fs*2)
 #b, a = mne_taps, [1.]
 
@@ -72,7 +72,7 @@ am3 = savitzky_golay(am2,41*4+1,2)
 from scipy.signal import savgol_filter, savgol_coeffs, lfilter
 n_taps = 155
 sc = savgol_coeffs(n_taps, 2, pos=n_taps-1)
-sc = minimum_phase(sc)
+#sc = minimum_phase(sc)
 #sc = [1.]
 
 
