@@ -65,6 +65,17 @@ x = np.abs(2 * am3)
 
 find_lag(x, i_envelope, fs, True)
 
+
+# butter + rc filter
+b, a = butter(1, np.array(band)/fs*2, btype='band')
+x_butter = lfilter(b, a, raw)
+from utils.envelope import RCEnvelopeDetector
+from utils.envelope.smoothers import exp_smooth
+#env = RCEnvelopeDetector(0.8)
+#x_butter = np.array([env.get_envelope(x_) for x_ in x])
+x_butter = exp_smooth(np.abs(x_butter), 0.025)
+find_lag(x_butter, i_envelope, fs, True)
+
 if 1:
     import seaborn as sns
     sns.set_style("white")
@@ -78,8 +89,9 @@ if 1:
     plt.plot(i_signal**2, c=cm[0], alpha=0.5)
     plt.plot(i_envelope**2, c=cm[0], alpha=1)
     plt.plot(fft_envelope**2, c=cm[1], alpha=1)
-    plt.plot(x ** 2/1.5, c=cm[2], alpha=1)
-    plt.legend(['$X^2(n)$','$P(n)$','$P_{FFT}(n)$','$P_{CM-SG}(n)$'])
+    plt.plot(x ** 2/np.std(x ** 2)*np.std(i_envelope**2), c=cm[2], alpha=1)
+    plt.plot(x_butter ** 2/np.std(x_butter ** 2)*np.std(i_envelope**2), c=cm[4], alpha=1)
+    plt.legend(['$X^2(n)$','$P(n)$','$P_{FFT}(n)$','$P_{CM-SG}(n)$', '$P_{BAE}(n)$'])
     plt.xlabel('$n$, [samples]')
     plt.ylabel('$P$')
     plt.xlim(8600, 9800)
@@ -102,21 +114,28 @@ if 1:
     ax1.set_title('a')
     lag1, mses1 = find_lag0(x)
     lag, mses = find_lag0(fft_envelope)
+    lag2, mses2 = find_lag0(x_butter)
     plt.plot(mses1, c=cm[2])
     plt.plot(mses, c=cm[1])
+    plt.plot(mses2, c=cm[4])
     plt.plot(lag1, np.min(mses1), 'o', c=cm[2])
     lag_str = '{}'.format(lag1) if fs is None else '{} ({:.3f} s)'.format(lag1, lag1/fs)
     plt.text(lag1-20, np.min(mses1)-0.2, lag_str, color=cm[2])
 
-    lag, mses = find_lag0(fft_envelope)
-    plt.plot(mses, c=cm[1])
+    #lag, mses = find_lag0(fft_envelope)
+    #plt.plot(mses, c=cm[1])
     plt.plot(lag, np.min(mses), 'o', c=cm[1])
+    plt.plot(lag2, np.min(mses2), 'o', c=cm[4])
     lag_str = '{}'.format(lag) if fs is None else '{} ({:.3f} s)'.format(lag, lag / fs)
     plt.text(lag + 15, np.min(mses)-0.1, lag_str, color=cm[1])
+    lag_str = '{}'.format(lag2) if fs is None else '{} ({:.3f} s)'.format(lag2, lag2 / fs)
+    plt.text(lag2 + 15, np.min(mses2) - 0.1, lag_str, color=cm[4])
+
     plt.ylim(0, 1.5)
+    plt.xlim(0, 150)
     plt.xlabel('lag, [samples]')
     plt.ylabel('n-MSE')
-    plt.legend(['CM-SG', 'FFT'])
+    plt.legend(['CM-SG', 'FFT', 'BAE'], loc=4)
     f.tight_layout()
     f.savefig('conf.jpg', dpi=300)
 
