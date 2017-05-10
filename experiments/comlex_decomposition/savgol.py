@@ -37,10 +37,10 @@ raw = raw[:n]
 raw = raw[:n]
 
 
-plt.plot(raw)
-plt.plot(i_signal)
-plt.plot(i_envelope)
-plt.show()
+#plt.plot(raw)
+#plt.plot(i_signal)
+#plt.plot(i_envelope)
+#plt.show()
 
 sine = np.exp(-1j*np.arange(25000)/fs*2*np.pi*(main_freq))
 
@@ -97,45 +97,35 @@ if 1:
     plt.xlim(8600, 9800)
 
     def find_lag0(x):
-        n = 300
+        n = 10000
         target = i_envelope
         nor = lambda x:  (x - np.mean(x)) / np.std(x)
         lags = np.arange(n)
         mses = np.zeros_like(lags).astype(float)
         n_points = len(target) - n
         for lag in lags:
-            mses[lag] = np.mean((nor(target[:n_points]) - nor(x[lag:n_points+lag]))**2)
-        lag = np.argmin(mses)
+            mses[lag] = np.mean((nor(target[:n_points]) * nor(x[lag:n_points+lag])))
+        lag = np.argmax(mses)
         return lag, mses
 
 
     ax1 = f.add_subplot(2, 1, 1)
 
     ax1.set_title('a')
-    lag1, mses1 = find_lag0(x)
-    lag, mses = find_lag0(fft_envelope)
-    lag2, mses2 = find_lag0(x_butter)
-    plt.plot(mses1, c=cm[2])
-    plt.plot(mses, c=cm[1])
-    plt.plot(mses2, c=cm[4])
-    plt.plot(lag1, np.min(mses1), 'o', c=cm[2])
-    lag_str = '{}'.format(lag1) if fs is None else '{} ({:.3f} s)'.format(lag1, lag1/fs)
-    plt.text(lag1-20, np.min(mses1)-0.2, lag_str, color=cm[2])
-
-    #lag, mses = find_lag0(fft_envelope)
-    #plt.plot(mses, c=cm[1])
-    plt.plot(lag, np.min(mses), 'o', c=cm[1])
-    plt.plot(lag2, np.min(mses2), 'o', c=cm[4])
-    lag_str = '{}'.format(lag) if fs is None else '{} ({:.3f} s)'.format(lag, lag / fs)
-    plt.text(lag + 15, np.min(mses)-0.1, lag_str, color=cm[1])
-    lag_str = '{}'.format(lag2) if fs is None else '{} ({:.3f} s)'.format(lag2, lag2 / fs)
-    plt.text(lag2 + 15, np.min(mses2) - 0.1, lag_str, color=cm[4])
+    hdls = []
+    for j, data in enumerate([fft_envelope, x, x_butter]):
+        c = cm[[1, 2, 4][j]]
+        lag, mses = find_lag0(data)
+        hdls.append(plt.plot(mses, c=c, label=['CM-SG', 'FFT', 'BAE'][j])[0])
+        plt.plot(lag, np.max(mses), 'o', c=c)
+        lag_str = '{}'.format(lag) if fs is None else '{} ({:.3f} s)'.format(lag, lag/fs)
+        plt.text(lag-10, np.max(mses)+0.1*j+0.1, lag_str, color=c)
 
     plt.ylim(0, 1.5)
     plt.xlim(0, 150)
     plt.xlabel('lag, [samples]')
-    plt.ylabel('n-MSE')
-    plt.legend(['CM-SG', 'FFT', 'BAE'], loc=4)
+    plt.ylabel('corr')
+    plt.legend(hdls, ['CM-SG', 'FFT', 'BAE'])
     f.tight_layout()
     f.savefig('conf.jpg', dpi=300)
 

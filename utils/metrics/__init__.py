@@ -13,15 +13,21 @@ def smoothness(x, ideal=None):
     else:
         return np.diff(x).std() / np.diff(ideal).std()
 
-def find_lag(x, target, fs=None, show=False):
-    n = 1000
+def find_lag(x, target, fs=None, show=False, nmse=False):
+    n = 10000
     nor = lambda x:  (x - np.mean(x)) / np.std(x)
     lags = np.arange(n)
     mses = np.zeros_like(lags).astype(float)
     n_points = len(target) - n
+
     for lag in lags:
-        mses[lag] = np.mean((nor(target[:n_points]) - nor(x[lag:n_points+lag]))**2)
+        if nmse:
+            mses[lag] = np.mean((nor(target[:n_points]) - nor(x[lag:n_points+lag]))**2)
+        else:
+            mses[lag] = -np.mean(nor(target[:n_points])*nor(x[lag:n_points+lag]))
     lag = np.argmin(mses)
+
+
 
     if show:
         f, (ax1, ax2) = plt.subplots(2)
