@@ -11,7 +11,7 @@ def smoothness(x, ideal=None):
     if ideal is None:
         return np.diff(x).std() / np.abs(np.diff(x).mean())
     else:
-        return np.diff(x).std() / np.diff(ideal).std()
+        return np.diff(ideal[::2], n=2).std() / np.diff(x[::2], n=2).std()
 
 def find_lag(x, target, fs=None, show=False, nmse=False):
     n = 10000

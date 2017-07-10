@@ -10,15 +10,6 @@ from utils.pipeline.ideal_envelope_detector import ideal_envelope_detector
 nor = lambda x: (x - x.mean()) / x.std()
 
 
-def plot_filters(b, a, sc, fs, fn):
-    from mne1.viz import plot_filter
-    f = plot_filter({'b': b, 'a': a}, fs, show=False)
-    plot_filter(sc, fs, fig_axes=f, color='g', fscale='linear', freq=[0, fn, fn, fs/2], gain=[1, 1, 0, 0], flim=(0,10),
-                show=False)
-    plt.legend(['butter', 'savgol', 'ideal'])
-    plt.show()
-
-
 fs = 250
 raw = load_normalised_raw_signal()
 n = 25000
@@ -33,48 +24,75 @@ i_signal, i_envelope = ideal_envelope_detector(raw, band, fs, n)
 # truncate samples
 raw = raw[:n]
 
-# truncate samples
-raw = raw[:n]
-
-
-#plt.plot(raw)
-#plt.plot(i_signal)
-#plt.plot(i_envelope)
-#plt.show()
 
 sine = np.exp(-1j*np.arange(25000)/fs*2*np.pi*(main_freq))
-
-
-
 b, a = butter(1, 1.5/fs*2, )
 iir_filtered = lfilter(b, a, raw * sine)
 n_taps, ordd = 151, 2
-
-
-
-#n_taps, ordd= 209-20, 2
-#n_taps, ordd= 517, 3
 sc = savgol_coeffs(n_taps, ordd, pos=n_taps-1)
-print(max(np.abs(np.roots(sc))))
-#sc = minimum_phase(sc)
-print(max(np.abs(np.roots(sc))))
-print(sc)
-
 am3 = lfilter(sc, [1.], iir_filtered)
-x = np.abs(2 * am3)
-
-find_lag(x, i_envelope, fs, True)
-
+x_savgol = np.abs(2 * am3)
 
 # butter + rc filter
 b, a = butter(1, np.array(band)/fs*2, btype='band')
 x_butter = lfilter(b, a, raw)
-from utils.envelope import RCEnvelopeDetector
 from utils.envelope.smoothers import exp_smooth
-#env = RCEnvelopeDetector(0.8)
-#x_butter = np.array([env.get_envelope(x_) for x_ in x])
 x_butter = exp_smooth(np.abs(x_butter), 0.025)
-find_lag(x_butter, i_envelope, fs, True)
+
+# fft
+x_fft = fft_chunk_envelope(raw, band=(main_freq - fn, main_freq + fn), fs=fs, smoothing_factor=0.1, chunk_size=1)
+
+def find_lag0(target, x, n=200):
+    nor = lambda x: (x - np.mean(x)) / np.std(x)
+    lags = np.arange(n)
+    mses = np.zeros_like(lags).astype(float)
+    n_points = len(target) - n
+    for lag in lags:
+        mses[lag] = np.mean((nor(target[:n_points]) * nor(x[lag:n_points + lag])))
+    lag = np.argmax(mses)
+    return lag, mses[lag]
+
+# collect statistics
+n_windows = 30
+n_samples = n // n_windows
+envelopes_names = ['STFT', 'BE', 'CD-SG']
+envelopes = dict(zip(envelopes_names, [x_fft,  x_butter, x_savgol]))
+import pandas as pd
+from utils.metrics import smoothness
+stats = pd.DataFrame(columns=['method', 'correlation', 'smoothness', 'lag, ms'])
+for k in range(n_windows):
+    window_slice = slice(n_samples*k, n_samples*(k+1))
+    for envelope in envelopes_names:
+        x = nor(envelopes[envelope])
+        lag, corr = find_lag0(i_envelope[window_slice], x[window_slice], n=200)
+        smooth = smoothness(x[window_slice], nor(i_envelope)[window_slice])
+        stats.loc[len(stats)+1] = [envelope, corr, smooth, lag/fs*1000]
+print(stats)
+import seaborn as sns
+f = plt.figure()
+axes = [f.add_subplot(2, 3, k) for k in range(4, 7)]
+axes[0].set_title('b')
+axes[1].set_title('c')
+axes[2].set_title('d')
+sns.boxplot(x="method", y="lag, ms", data=stats, ax=axes[0])
+sns.boxplot(x="method", y="correlation", data=stats, ax=axes[1])
+sns.boxplot(x="method", y="smoothness", data=stats, ax=axes[2])
+
+ax = f.add_subplot(2, 1, 1)
+ax.set_title('a')
+cm = sns.color_palette()
+t = np.arange(len(i_signal))/fs
+ax.plot(t, i_signal**2, c=cm[4], alpha=0.5)
+ax.plot(t, i_envelope**2, c=cm[4], alpha=1)
+ax.plot(t, x_fft ** 2, c=cm[0], alpha=1)
+ax.plot(t, x_savgol ** 2 / np.std(x_savgol ** 2) * np.std(i_envelope ** 2), c=cm[2], alpha=1)
+ax.plot(t, x_butter ** 2/np.std(x_butter ** 2)*np.std(i_envelope**2), c=cm[1], alpha=1)
+ax.legend(['$X^2(n)$','$P(n)$','$P_{STFT}(n)$','$P_{CD-SG}(n)$', '$P_{BE}(n)$'])
+ax.set_xlabel('time, s')
+ax.set_ylabel('$P$')
+ax.set_xlim(8600/fs, 9800/fs)
+plt.tight_layout()
+plt.show()
 
 if 1:
     import seaborn as sns
@@ -84,14 +102,14 @@ if 1:
     ax.set_title('b')
     nor = lambda x: (x - np.mean(x) * 0) / np.std(x)
 
-    fft_envelope = fft_chunk_envelope(raw, band=(main_freq-fn, main_freq+fn), fs=fs, smoothing_factor=0.1, chunk_size=1)
+
     cm = sns.color_palette()
     plt.plot(i_signal**2, c=cm[0], alpha=0.5)
     plt.plot(i_envelope**2, c=cm[0], alpha=1)
-    plt.plot(fft_envelope**2, c=cm[1], alpha=1)
-    plt.plot(x ** 2/np.std(x ** 2)*np.std(i_envelope**2), c=cm[2], alpha=1)
+    plt.plot(x_fft ** 2, c=cm[1], alpha=1)
+    plt.plot(x_savgol ** 2 / np.std(x_savgol ** 2) * np.std(i_envelope ** 2), c=cm[2], alpha=1)
     plt.plot(x_butter ** 2/np.std(x_butter ** 2)*np.std(i_envelope**2), c=cm[4], alpha=1)
-    plt.legend(['$X^2(n)$','$P(n)$','$P_{FFT}(n)$','$P_{CM-SG}(n)$', '$P_{BAE}(n)$'])
+    plt.legend(['$X^2(n)$','$P(n)$','$P_{FFT}(n)$','$P_{CD-SG}(n)$', '$P_{BAE}(n)$'])
     plt.xlabel('$n$, [samples]')
     plt.ylabel('$P$')
     plt.xlim(8600, 9800)
@@ -113,10 +131,10 @@ if 1:
 
     ax1.set_title('a')
     hdls = []
-    for j, data in enumerate([fft_envelope, x, x_butter]):
+    for j, data in enumerate([x_fft, x_savgol, x_butter]):
         c = cm[[1, 2, 4][j]]
         lag, mses = find_lag0(data)
-        hdls.append(plt.plot(mses, c=c, label=['CM-SG', 'FFT', 'BAE'][j])[0])
+        hdls.append(plt.plot(mses, c=c, label=['CD-SG', 'FFT', 'BAE'][j])[0])
         plt.plot(lag, np.max(mses), 'o', c=c)
         lag_str = '{}'.format(lag) if fs is None else '{} ({:.3f} s)'.format(lag, lag/fs)
         plt.text(lag-10, np.max(mses)+0.1*j+0.1, lag_str, color=c)
