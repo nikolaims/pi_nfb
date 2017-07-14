@@ -65,26 +65,28 @@ plt.plot(i_signal, c=cm[0], alpha=1)
 plt.plot(i_signal*0, c=cm[0], alpha=0.5)
 
 
-plt.plot(i_signal*sine - 2, c=cm[1], alpha=1)
-plt.plot(i_signal*0 - 2, c=cm[1], alpha=0.5)
+#plt.plot(i_signal*sine - 2, c=cm[1], alpha=1)
+#plt.plot(i_signal*0 - 2, c=cm[1], alpha=0.5)
 
-b, a = butter(1, 1.5/fs*2, )
-iir_filtered = 2*lfilter(b, a, i_signal * sine)
-plt.plot(iir_filtered - 4, c=cm[2], alpha=1)
-plt.plot(iir_filtered*0 - 4, c=cm[2], alpha=0.5)
+b, a = butter(1, np.array(band)/fs*2, btype='band')
+iir_filtered = lfilter(b, a, i_signal)
+#from utils.envelope.smoothers import exp_smooth
+#x_butter = exp_smooth(np.abs(x_butter), 0.025)
 
-n_taps, ordd = 151, 2
-sc = savgol_coeffs(n_taps, ordd, pos=n_taps-1)
-am3 = lfilter(sc, [1.], iir_filtered)
-x_savgol = am3
-plt.plot(x_savgol - 6, c=cm[3], alpha=1)
-plt.plot(x_savgol*0 - 6, c=cm[3], alpha=0.5)
+#iir_filtered = 2*lfilter(b, a, i_signal * sine)
+plt.plot(iir_filtered - 2, c=cm[2], alpha=1)
+plt.plot(iir_filtered*0 - 2, c=cm[2], alpha=0.5)
+
+from utils.envelope.smoothers import exp_smooth
+x_savgol = np.abs(iir_filtered)
+plt.plot(x_savgol - 4, c=cm[3], alpha=1)
+plt.plot(x_savgol*0 - 4, c=cm[3], alpha=0.5)
 
 
-plt.plot(np.abs(np.real(x_savgol)) - 8, c=cm[5], alpha=1)
-plt.plot(np.abs(np.real(x_savgol))*0 - 8, c=cm[5], alpha=0.5)
-plt.xlim(8500, 9100)
+plt.plot(2*exp_smooth(x_savgol, 0.025) - 6, c=cm[5], alpha=1)
+plt.plot(np.abs(x_savgol)*0 - 6, c=cm[5], alpha=0.5)
+plt.xlim(8400, 9000)
 plt.ylim(-11, 2)
 plt.axis('off')
-f.savefig('pipeline_{}.png'.format(key), dpi=200)
+f.savefig('pipeline_iir_{}.png'.format(key), dpi=200)
 plt.show()

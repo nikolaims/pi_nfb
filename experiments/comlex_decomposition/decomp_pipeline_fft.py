@@ -31,6 +31,7 @@ raw = raw[:n]
 sine = np.exp(-1j*np.arange(25000)/fs*2*np.pi*(main_freq))
 
 
+
 # plot spec
 f = plt.figure(figsize=(5, 3))
 ff, v = welch(raw, fs, nperseg=1000,  return_onesided=False, detrend=False)
@@ -61,28 +62,25 @@ f = plt.figure(figsize=(5, 5))
 key = 'ideal'
 i_signal = 0.8*{'raw': raw, 'ideal': i_signal}[key]
 
-plt.plot(i_signal, c=cm[0], alpha=1)
+smoothed, filtered, window = fft_chunk_envelope(i_signal, band=(main_freq - fn, main_freq + fn), fs=fs, smoothing_factor=0.1, chunk_size=1)
+
 plt.plot(i_signal*0, c=cm[0], alpha=0.5)
+start_index = 8500
+rrange = np.arange(start_index, start_index+len(window)//2)
+plt.plot(i_signal[:start_index], c=cm[0], alpha=1)
+plt.plot(np.arange(start_index + len(window)//2, len(i_signal)), i_signal[start_index + len(window)//2:], c=cm[0], alpha=1)
+plt.fill_between(rrange, 2*window[:len(window)//2], color=cm[1], alpha=0.8)
+plt.plot(rrange, i_signal[rrange], color=cm[0], alpha=0.5)
 
 
-plt.plot(i_signal*sine - 2, c=cm[1], alpha=1)
-plt.plot(i_signal*0 - 2, c=cm[1], alpha=0.5)
+plt.plot(2*filtered - 4, c=cm[2], alpha=1)
+plt.plot(2*filtered*0 - 4, c=cm[2], alpha=0.5)
 
 b, a = butter(1, 1.5/fs*2, )
 iir_filtered = 2*lfilter(b, a, i_signal * sine)
-plt.plot(iir_filtered - 4, c=cm[2], alpha=1)
-plt.plot(iir_filtered*0 - 4, c=cm[2], alpha=0.5)
+plt.plot(2*smoothed - 8, c=cm[3], alpha=1)
+plt.plot(2*smoothed*0 - 8, c=cm[3], alpha=0.5)
 
-n_taps, ordd = 151, 2
-sc = savgol_coeffs(n_taps, ordd, pos=n_taps-1)
-am3 = lfilter(sc, [1.], iir_filtered)
-x_savgol = am3
-plt.plot(x_savgol - 6, c=cm[3], alpha=1)
-plt.plot(x_savgol*0 - 6, c=cm[3], alpha=0.5)
-
-
-plt.plot(np.abs(np.real(x_savgol)) - 8, c=cm[5], alpha=1)
-plt.plot(np.abs(np.real(x_savgol))*0 - 8, c=cm[5], alpha=0.5)
 plt.xlim(8500, 9100)
 plt.ylim(-11, 2)
 plt.axis('off')

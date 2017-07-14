@@ -31,7 +31,7 @@ iir_filtered = lfilter(b, a, raw * sine)
 n_taps, ordd = 151, 2
 sc = savgol_coeffs(n_taps, ordd, pos=n_taps-1)
 am3 = lfilter(sc, [1.], iir_filtered)
-x_savgol = np.abs(2 * am3)
+x_savgol = np.abs(2 * np.real(am3))
 
 # butter + rc filter
 b, a = butter(1, np.array(band)/fs*2, btype='band')
