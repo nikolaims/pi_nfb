@@ -33,11 +33,11 @@ sine = np.exp(-1j*np.arange(25000)/fs*2*np.pi*(main_freq))
 
 # plot spec
 f = plt.figure(figsize=(5, 3))
-ff, v = welch(raw, fs, nperseg=1000,  return_onesided=False, detrend=False)
-ff = np.hstack((ff[len(ff)//2:], ff[:len(ff)//2]))
-v = np.hstack((v[len(v)//2:], v[:len(v)//2]))
-plt.plot(ff, v, c=cm[0])
-plt.fill_between(*welch(i_signal, fs, nperseg=1000,  return_onesided=False, detrend=False), color=cm[0], alpha=0.8)
+#ff, v = welch(raw, fs, nperseg=1000,  return_onesided=False, detrend=False)
+#ff = np.hstack((ff[len(ff)//2:], ff[:len(ff)//2]))
+#v = np.hstack((v[len(v)//2:], v[:len(v)//2]))
+#plt.plot(ff, v, c=cm[0])
+#plt.fill_between(*welch(i_signal, fs, nperseg=1000,  return_onesided=False, detrend=False), color=cm[0], alpha=0.8)
 
 ff, v = welch(raw*sine, fs, nperseg=1000,  return_onesided=False, detrend=False)
 ff = np.hstack((ff[len(ff)//2:], ff[:len(ff)//2]))
@@ -53,36 +53,47 @@ plt.ylabel('PSD')
 plt.xlim(-15, 15)
 plt.ylim(0, 0.05)
 f.tight_layout()
-f.savefig('spec_shift.png', dpi=200)
+f.savefig('spec_shift2.png', dpi=200)
 plt.show()
 
 # plot how signal transformed
 f = plt.figure(figsize=(5, 5))
 key = 'ideal'
-i_signal = 0.8*{'raw': raw, 'ideal': i_signal}[key]
+i_signal = 0.5*{'raw': raw, 'ideal': i_signal}[key]
+
+
+#plt.plot(0.5*i_envelope, 'k', alpha=1)
+#plt.plot(0.5*i_envelope-2, 'k', alpha=1)
+#plt.plot(0.5*i_envelope-4, 'k', alpha=1)
+#plt.plot(0.5*i_envelope-6, 'k', alpha=1)
+#plt.plot(0.5*i_envelope-8, 'k', alpha=1)
 
 plt.plot(i_signal, c=cm[0], alpha=1)
+
 plt.plot(i_signal*0, c=cm[0], alpha=0.5)
 
 
-plt.plot(i_signal*sine - 2, c=cm[1], alpha=1)
+plt.plot(np.real(i_signal*sine) - 2, c=cm[1], alpha=1)
+plt.plot(np.imag(i_signal*sine) - 2, c=cm[1], alpha=0.4)
 plt.plot(i_signal*0 - 2, c=cm[1], alpha=0.5)
 
 b, a = butter(1, 1.5/fs*2, )
 iir_filtered = 2*lfilter(b, a, i_signal * sine)
-plt.plot(iir_filtered - 4, c=cm[2], alpha=1)
+plt.plot(np.real(iir_filtered) - 4, c=cm[2], alpha=1)
 plt.plot(iir_filtered*0 - 4, c=cm[2], alpha=0.5)
+plt.plot(np.imag(iir_filtered) - 4 ,c=cm[2], alpha=0.4)
 
 n_taps, ordd = 151, 2
 sc = savgol_coeffs(n_taps, ordd, pos=n_taps-1)
 am3 = lfilter(sc, [1.], iir_filtered)
 x_savgol = am3
-plt.plot(x_savgol - 6, c=cm[3], alpha=1)
+plt.plot(np.real(x_savgol) - 6, c=cm[3], alpha=1)
+plt.plot(np.imag(x_savgol) - 6 ,c=cm[3], alpha=0.4)
 plt.plot(x_savgol*0 - 6, c=cm[3], alpha=0.5)
 
 
-plt.plot(np.abs(np.real(x_savgol)) - 8, c=cm[5], alpha=1)
-plt.plot(np.abs(np.real(x_savgol))*0 - 8, c=cm[5], alpha=0.5)
+plt.plot(np.abs(x_savgol) - 8, c=cm[5], alpha=1)
+plt.plot(np.abs(x_savgol)*0 - 8, c=cm[5], alpha=0.5)
 plt.xlim(8500, 9100)
 plt.ylim(-11, 2)
 plt.axis('off')

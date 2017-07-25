@@ -58,7 +58,7 @@ plt.show()
 
 # plot how signal transformed
 f = plt.figure(figsize=(5, 5))
-key = 'ideal'
+key = 'raw'
 i_signal = 0.8*{'raw': raw, 'ideal': i_signal}[key]
 
 plt.plot(i_signal, c=cm[0], alpha=1)

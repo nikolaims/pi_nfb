@@ -8,6 +8,7 @@ from utils.filters.main_freq import get_main_freq
 from utils.metrics import find_lag
 from utils.pipeline.ideal_envelope_detector import ideal_envelope_detector
 nor = lambda x: (x - x.mean()) / x.std()
+from mne1.viz import plot_filter
 
 
 fs = 250
@@ -27,6 +28,23 @@ raw = raw[:n]
 
 sine = np.exp(-1j*np.arange(25000)/fs*2*np.pi*(main_freq))
 b, a = butter(1, 1.5/fs*2, )
+
+
+
+from scipy.signal import freqz, group_delay
+
+
+H = freqz(b, a)[1]
+
+
+
+w, gd = group_delay((b, a))
+gd = H * H.conj()
+w = w/np.pi*125
+gfgf = plt.figure(figsize=(4, 3))
+plt.semilogy(w, gd)
+
+
 iir_filtered = lfilter(b, a, raw * sine)
 n_taps, ordd = 151, 2
 sc = savgol_coeffs(n_taps, ordd, pos=n_taps-1)
@@ -35,6 +53,25 @@ x_savgol = np.abs(2 * np.real(am3))
 
 # butter + rc filter
 b, a = butter(1, np.array(band)/fs*2, btype='band')
+H = freqz(b, a)[1]
+
+
+
+w, gd = group_delay((b, a))
+gd = H * H.conj()
+w = w/np.pi*125
+#gfgf = plt.figure()
+plt.semilogy(w, gd)
+plt.ylabel('Magnitude [samples]')
+plt.xlabel('Frequency [Hz]')
+plt.legend(['Low-pass', 'Band-pass'])
+
+plt.xlim(0, 50)
+plt.ylim(0.9e-6, 1.1)
+gfgf.tight_layout()
+gfgf.savefig('delays', dpi=200)
+plt.show()
+#plot_filter({'b': b, 'a':a}, 250, show=True, fig_axes=plt.gcf())
 x_butter = lfilter(b, a, raw)
 from utils.envelope.smoothers import exp_smooth
 x_butter = exp_smooth(np.abs(x_butter), 0.025)
@@ -85,8 +122,8 @@ t = np.arange(len(i_signal))/fs
 ax.plot(t, i_signal**2, c=cm[4], alpha=0.5)
 ax.plot(t, i_envelope**2, c=cm[4], alpha=1)
 ax.plot(t, x_fft ** 2, c=cm[0], alpha=1)
-ax.plot(t, x_savgol ** 2 / np.std(x_savgol ** 2) * np.std(i_envelope ** 2), c=cm[2], alpha=1)
-ax.plot(t, x_butter ** 2/np.std(x_butter ** 2)*np.std(i_envelope**2), c=cm[1], alpha=1)
+ax.plot(t, 0.9*x_savgol ** 2 / np.std(x_savgol ** 2) * np.std(i_envelope ** 2), c=cm[2], alpha=1)
+ax.plot(t, 0.8*x_butter ** 2/np.std(x_butter ** 2)*np.std(i_envelope**2), c=cm[1], alpha=1)
 ax.legend(['$X^2(n)$','$P(n)$','$P_{STFT}(n)$','$P_{CD-SG}(n)$', '$P_{BE}(n)$'])
 ax.set_xlabel('time, s')
 ax.set_ylabel('$P$')

@@ -59,7 +59,7 @@ plt.show()
 
 # plot how signal transformed
 f = plt.figure(figsize=(5, 5))
-key = 'ideal'
+key = 'raw'
 i_signal = 0.8*{'raw': raw, 'ideal': i_signal}[key]
 
 smoothed, filtered, window = fft_chunk_envelope(i_signal, band=(main_freq - fn, main_freq + fn), fs=fs, smoothing_factor=0.1, chunk_size=1)
